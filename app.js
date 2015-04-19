@@ -8,7 +8,7 @@ app.config(function ($routeProvider) {
   }).
   when('/dashboard', {
     templateUrl: 'pages/home.html',
-    controller: 'HappeningController as spry'
+    controller: 'DashboardController as spry'
   }).
   when('/settings', {
     templateUrl: 'pages/settings.html',
@@ -19,23 +19,18 @@ app.config(function ($routeProvider) {
   });
 });
 
+
 /*
-app.config(function($httpProvider) {
-    //Enable cross domain calls
-    $httpProvider.defaults.useXDomain = true;
-});
-  */
+ * DASHBOARD Controller
+ */
 
-
-app.controller('HappeningController',
+app.controller('DashboardController',
   function (spryFactory) {
     this.happenings = [];
     this.selected = null;
 
     //load happenings
     var controller = this;
-  
-    spryFactory.initConnection();
 
     this.updateList = function() {
       spryFactory.getHappenings()
@@ -48,7 +43,6 @@ app.controller('HappeningController',
 
     this.clicked = function (element) {
       this.selected = element;
-      //console.log(element);
     };
 
     this.isSelected = function (h) {
@@ -60,7 +54,7 @@ app.controller('HappeningController',
     };
   
     this.addHappening = function () {
-      console.log("DEBUG: HappeningController - addHappening");
+      console.log("DEBUG: DashboardController: addHappening");
       
       var happening = {
         "description": this.description,
@@ -71,8 +65,6 @@ app.controller('HappeningController',
       /* add position if geolocation is available */
       if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(function(position){
-            console.log("there is a location!");
-            console.log(position);
             happening["location"] = position.coords.latitude + ' ' + position.coords.longitude;
           });
         }
@@ -96,6 +88,10 @@ app.controller('HappeningController',
   });
 
 
+/*
+ * TAB Controller
+ */
+
 app.controller('TabController', function () {
   this.tab = 0;
 
@@ -108,16 +104,33 @@ app.controller('TabController', function () {
   }
 });
 
+
+
+
+/*
+ * SETTINGS Controller
+ */
+
 app.controller('SettingsController', function () {
 
 });
 
-app.controller('LoginController', function ($location, spryFactory) {
+
+
+
+/*
+ * LOGIN Controller
+ */
+
+app.controller('LoginController', function ($location, spryFactory, authManager) {
   var loginController = this;
   this.error;
 
   this.login = function () {
     console.log("check: " + this.username + ":" + this.password);
+    
+    authManager.setCredentials(this.username, this.password);
+    
     spryFactory.checkAuth(loginController.username, loginController.password)
       .success(function (data, status) {
         $location.path('/dashboard');
@@ -129,6 +142,9 @@ app.controller('LoginController', function ($location, spryFactory) {
 });
 
 
+/*
+ * MAIN Controller
+ */
 
 app.controller('MainController', function ($location, spryFactory) {    
   this.isActive = function (route) {

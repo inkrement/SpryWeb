@@ -88,54 +88,28 @@ tools.factory('Base64', function () {
 
 
 
-tools.factory('spryFactory', function ($http, Base64) {
+tools.factory('spryFactory', function ($http) {
   var urlBase = 'https://api.gospry.com/v8';
   var factory = {};
-  factory.authHeader;
-  factory.id;
   factory.happenings = [];
   
-  function storeCredentials(username, password){
-    console.log("store credentials to localStorage");
-    
-    localStorage.setItem("username", username); 
-    localStorage.setItem("password", password); 
-  }
-  
-  function loadCredentials(){
-    console.log("load credentials from localStorage");
-    
-    return {
-      username : localStorage.getItem("username"),
-      password : localStorage.getItem("password")
-    }
-  }
-  
-  factory.checkAuth = function (username, password) {
-    //persist password (TODO: security!)
-    storeCredentials(username, password);
-    
-    factory.initConnection();
-    
+   /**
+   * TODO: call api and check status
+   */
+  factory.checkAuth = function () {
     return factory.getHappenings();
   };
   
+
+  /**
+   * Specific API functions
+   */
+  
+  
   factory.logout = function(){
-    localStorage.removeItem('username');
-    localStorage.removeItem('password');
+    //TODO: call logout url
+    //removeCredentials();
   };
-  
-  
-  factory.initConnection = function(){
-    var credentials = loadCredentials();
-    
-    factory.id = credentials.username;
-    factory.authHeader = 'Basic ' + Base64.encode(credentials.username + ':' + credentials.password);
-    
-    console.log("DEBUG: spryFactory - set auth header: " + factory.authHeader);
-    $http.defaults.headers.common.Authorization = factory.authHeader;
-  };
-  
   
   factory.deleteHappening = function (happening) {
     return $http.delete(urlBase + '/happening/' + happening.id);
@@ -143,14 +117,10 @@ tools.factory('spryFactory', function ($http, Base64) {
   
   factory.addHappening = function (happening) {
     //return $http.post(urlBase + '/happening', happening);
-    console.log("DEBUG: spryFactory - add new Happening " + happening + " authHeader:" + factory.authHeader);
     
     return $http({
       method: 'POST',
       url: urlBase + '/happening',
-      /*headers: {
-        'Authorization': factory.authHeader
-      },*/
       data: happening
     });
   };
@@ -160,10 +130,7 @@ tools.factory('spryFactory', function ($http, Base64) {
 
     return $http({
       method: 'GET',
-      url: urlBase + '/happening',
-      headers: {
-      //  'Authorization': factory.authHeader
-      }
+      url: urlBase + '/happening'
     });
   };
     
@@ -177,3 +144,61 @@ tools.factory('spryFactory', function ($http, Base64) {
 
   return factory;
 });
+
+/**
+ * AUTHENTICATION
+ */
+
+tools.factory('authManager', function(Base64){
+  var factory = {};
+  
+   factory.setCredentials = function(username, password){
+    console.log("store credentials to localStorage");
+    
+    localStorage.setItem("username", username); 
+    localStorage.setItem("password", password); 
+  }
+  
+  factory.removeCredentials = function(){
+    localStorage.removeItem('username');
+    localStorage.removeItem('password');
+  }
+  
+  factory.loadCredentials = function(){
+    console.log("load credentials from localStorage");
+
+    return {
+      username : localStorage.getItem("username"),
+      password : localStorage.getItem("password")
+    }
+  }
+  
+  factory.generateAuthHeader = function(){
+    var credentials = factory.loadCredentials();
+    
+    return 'Basic ' + Base64.encode(
+      credentials.username + ':' + credentials.password);
+  }
+  
+  return factory;
+});
+
+
+tools.factory('SpryAuthInterceptor', function (authManager) 
+{
+  return {
+    request: function (config) 
+    { 
+      config.headers = config.headers || {};
+      config.headers.Authorization = authManager.generateAuthHeader();
+      
+      console.log("Auth interceptor called: ");
+      console.log(config);
+      return config;
+    }
+  };
+});
+
+tools.config(['$httpProvider', function ($httpProvider) {
+  $httpProvider.interceptors.push('SpryAuthInterceptor');
+}]);
