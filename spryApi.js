@@ -89,7 +89,7 @@ tools.factory('Base64', function () {
 
 
 tools.factory('spryFactory', function ($http) {
-  var urlBase = 'https://api.gospry.com/v8';
+  var urlBase = 'https://api.gospry.com';
   var factory = {};
   factory.happenings = [];
   
